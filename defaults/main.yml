@@ -1,0 +1,5 @@
+---
+# defaults file for ansible-group_to_marathon
+marathon_group_wait_for_deployment: true
+marathon_group_url: http://127.0.0.1:8080
+marathon_group_retries: 300

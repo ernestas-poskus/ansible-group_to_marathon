@@ -1,0 +1,47 @@
+---
+# tasks file for ansible-group_to_marathon
+- name: "Launching group: {{ marathon_group.id }}"
+  tags:
+    - create
+    - update
+  uri: >
+    url="{{ marathon_group_url }}/v2/groups"
+    method=PUT
+    body_format=json
+    body='{{ marathon_group | to_json }}'
+    status_code=200,201
+  register: marathon_deployment
+
+- name: "Waiting for group: {{ marathon_group.id }}"
+  tags:
+    - create
+    - wait
+  uri: >
+    url="{{ marathon_group_url }}/v2/deployments"
+    method=GET
+    status_code=200
+  register: marathon_deployments
+  until: "{{ marathon_deployment.json.deploymentId not in marathon_deployments.json|map(attribute='id') }}"
+  delay: 1
+  retries: '{{ marathon_group_retries }}'
+  when: marathon_group_wait_for_deployment
+
+- name: "Destroying group: {{marathon_group.id}}"
+  tags:
+    - destroy
+  uri: >
+    url="{{ marathon_group_url }}/v2/groups/{{marathon_group.id}}"
+    method=DELETE
+    status_code=200
+  when: want_to_destroy is defined
+
+- name: "Scale group: {{marathon_group.id}}"
+  tags:
+    - scale
+  uri: >
+    url="{{ marathon_group_url }}/v2/groups/{{marathon_group.id}}"
+    method=PUT
+    body_format=json
+    body='{"scale_By": {{scale_to}}}'
+    status_code=200,201
+  when: scale_to is defined
